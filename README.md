@@ -62,38 +62,26 @@ The hourly chart is the clearest example of the thesis. Temperature and dew poin
 
 ```mermaid
 flowchart TD
-    STN["Weather station<br/>form-encoded upload, passkey in body"]
-    CF["Cloudflare Tunnel<br/>dewfront.com"]
-
-    subgraph browser["Browser"]
-        SPA["React 19 SPA<br/>Vite, TanStack Query"]
-        LS[("localStorage<br/>settings only")]
-    end
+    STN["Weather station"] -->|"passkey in the body"| CF["Cloudflare Tunnel<br/>dewfront.com"]
+    CF --> NGINX
 
     subgraph host["One Linux host, Docker"]
-        NGINX["nginx<br/>static bundle, proxies /api"]
-        API["Fastify 5 backend<br/>bound to loopback"]
-        CRON["node-cron<br/>hourly jobs"]
-        DB[("SQLite")]
+        NGINX["nginx<br/>static bundle, proxies /api"] --> API["Fastify 5 backend<br/>bound to loopback"]
+        CRON["node-cron<br/>hourly jobs"] --> API
+        API --> DB[("SQLite")]
     end
 
-    subgraph up["Keyless public upstreams"]
-        OM["Open-Meteo<br/>forecast, models, archive"]
-        NWS["api.weather.gov<br/>alerts, observations"]
-        GEO["Nominatim<br/>Zippopotam.us"]
-        RV["RainViewer<br/>radar"]
-    end
-
-    STN --> CF
-    CF --> NGINX
     NGINX -->|"serves the bundle"| SPA
-    SPA <--> LS
-    SPA -->|"every render, no proxy"| up
+
+    subgraph browser["Browser"]
+        SPA["React 19 SPA<br/>Vite, TanStack Query"] --> LS[("localStorage<br/>settings only")]
+    end
+
     SPA -->|"three read routes"| NGINX
-    NGINX --> API
-    CRON --> API
-    API --> DB
-    API -->|"hourly snapshots"| up
+    SPA -->|"every render, no proxy"| UP
+    API -->|"hourly snapshots"| UP
+
+    UP["Public upstreams, no keys<br/>Open-Meteo, api.weather.gov, Nominatim,<br/>Zippopotam.us, RainViewer"]
 ```
 
 The SPA renders entirely from its own upstream calls and does not need the backend to work. The backend exists for the things a browser cannot do, all of which have to happen while nobody is looking: snapshotting forecasts hourly so accuracy can be graded later, composing a daily summary, delivering webhooks when a danger insight first appears, and ingesting uploads from a physical weather station.
