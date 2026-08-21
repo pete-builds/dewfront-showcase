@@ -61,14 +61,17 @@ The hourly chart is the clearest example of the thesis. Temperature and dew poin
 ## Architecture
 
 ```mermaid
-flowchart TB
+flowchart TD
+    STN["Weather station<br/>form-encoded upload, passkey in body"]
+    CF["Cloudflare Tunnel<br/>dewfront.com"]
+
     subgraph browser["Browser"]
         SPA["React 19 SPA<br/>Vite, TanStack Query"]
         LS[("localStorage<br/>settings only")]
     end
 
     subgraph host["One Linux host, Docker"]
-        NGINX["nginx<br/>static bundle + /api proxy"]
+        NGINX["nginx<br/>static bundle, proxies /api"]
         API["Fastify 5 backend<br/>bound to loopback"]
         CRON["node-cron<br/>hourly jobs"]
         DB[("SQLite")]
@@ -76,28 +79,21 @@ flowchart TB
 
     subgraph up["Keyless public upstreams"]
         OM["Open-Meteo<br/>forecast, models, archive"]
-        NWS["api.weather.gov<br/>alerts, station observations"]
-        GEO["Nominatim, Zippopotam.us<br/>geocoding"]
-        RV["RainViewer<br/>radar tiles"]
+        NWS["api.weather.gov<br/>alerts, observations"]
+        GEO["Nominatim<br/>Zippopotam.us"]
+        RV["RainViewer<br/>radar"]
     end
 
-    CF["Cloudflare Tunnel<br/>dewfront.com"]
-    STN["Weather station<br/>form-encoded upload"]
-
+    STN --> CF
     CF --> NGINX
+    NGINX -->|"serves the bundle"| SPA
     SPA <--> LS
-    NGINX --> SPA
-    SPA -->|"direct, no proxy"| OM
-    SPA --> NWS
-    SPA --> GEO
-    SPA --> RV
-    SPA -->|"/api reads only"| NGINX
+    SPA -->|"every render, no proxy"| up
+    SPA -->|"three read routes"| NGINX
     NGINX --> API
-    API --> DB
     CRON --> API
-    API --> OM
-    API --> NWS
-    STN -->|"passkey in body"| CF
+    API --> DB
+    API -->|"hourly snapshots"| up
 ```
 
 The SPA renders entirely from its own upstream calls and does not need the backend to work. The backend exists for the things a browser cannot do, all of which have to happen while nobody is looking: snapshotting forecasts hourly so accuracy can be graded later, composing a daily summary, delivering webhooks when a danger insight first appears, and ingesting uploads from a physical weather station.
