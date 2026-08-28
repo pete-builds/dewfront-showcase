@@ -44,7 +44,7 @@ Precedence is per field, not per source. The distinction pays off in an ordinary
 
 | Rank | Source | Freshness cutoff |
 |---|---|---|
-| 1 | Configured personal weather station | 60 minutes |
+| 1 | Chosen personal weather station, from the Weather Underground network | 60 minutes |
 | 2 | Nearest National Weather Service station | 90 minutes, since ASOS reports hourly |
 | 3 | The Open-Meteo model | n/a |
 
@@ -58,6 +58,24 @@ Measured readings carry an accent mark and modelled ones do not. The active sour
 
 The hourly chart is the clearest example of the thesis. Temperature and dew point share an axis and the gap between the curves is shaded, because that gap is how much room the air has left to hold its moisture. When the curves converge overnight, mugginess builds even as the temperature falls. The convergence is marked on the chart and named in a sentence under it.
 
+## Choosing the station you are reading
+
+Precedence only matters if the top rank is reachable, and for most people it is not: a personal weather station is something you have to know exists, find the identifier for, and type in. So the app went looking on the reader's behalf.
+
+The station control is a map. It plots the official NWS stations and the nearby Weather Underground stations around the chosen place, each pin carrying its current temperature, and panning it finds more without lengthening the list. Picking a pin pins that station, and the hero then names it once so the reader knows whose thermometer they are reading.
+
+Three things were removed from that picker on purpose after they were built. A quality-control verdict per station, because it reported on the picker's own confidence rather than helping anyone choose. A "showing the 5 nearest of 34" line, for the same reason. And a second, separate control for the official station, because the split between "official" and "personal" is an implementation detail the reader was being asked to hold. One control, one map, one named station.
+
+Stations Weather Underground itself flags as bad are never offered, and distance gating stops the list presenting sensors too far away to describe the reader's air.
+
+## Radar
+
+The Maps screen answers one question, "is that rain going to reach me", and its scope is set by that question. It is a fixed view centred on the chosen place rather than a pannable map, with three discrete zoom steps, because panning and pinch-zoom would mean a map library and the question is about the area around one point.
+
+The loop plays observed frames and then forecast ones, with the forecast half marked. A radar animation that slides from measurement into prediction without saying so is the most quietly misleading thing a weather app can show.
+
+Zoom 7 is a hard ceiling and it is an external limit, not a taste decision. Probed against the public RainViewer tile cache: zooms 0 through 7 return real imagery, and 8, 9 and 10 all return the same 1,370 byte "Zoom Level Not Supported" placeholder with **HTTP 200**. Because the status is 200 nothing errors and nothing retries, so the screen simply fills with grey cards. That is exactly what it shipped doing before the limit was found.
+
 ## Architecture
 
 ```mermaid
@@ -68,6 +86,7 @@ flowchart TD
     subgraph host["One Linux host, Docker"]
         NGINX["nginx<br/>static bundle, proxies /api"] --> API["Fastify 5 backend<br/>bound to loopback"]
         CRON["node-cron<br/>hourly jobs"] --> API
+        MCP["mcp-weather<br/>MCP server"] --> API
         API --> DB[("SQLite")]
     end
 
@@ -77,14 +96,22 @@ flowchart TD
         SPA["React 19 SPA<br/>Vite, TanStack Query"] --> LS[("localStorage<br/>settings only")]
     end
 
-    SPA -->|"three read routes"| NGINX
+    SPA -->|"five read routes"| NGINX
     SPA -->|"every render, no proxy"| UP
+    SPA -->|"build time key, inlined in the bundle"| CARTO
     API -->|"hourly snapshots"| UP
+    API -->|"operator key, never handed to the browser"| WU
 
-    UP["Public upstreams, no keys<br/>Open-Meteo, api.weather.gov, Nominatim,<br/>Zippopotam.us, RainViewer"]
+    UP["Keyless public upstreams<br/>Open-Meteo forecast, archive, air quality and geocoding,<br/>api.weather.gov, Nominatim, Zippopotam.us, RainViewer"]
+    CARTO["CARTO basemap tiles"]
+    WU["Weather Underground<br/>personal station network"]
 ```
 
-The SPA renders entirely from its own upstream calls and does not need the backend to work. The backend exists for the things a browser cannot do, all of which have to happen while nobody is looking: snapshotting forecasts hourly so accuracy can be graded later, composing a daily summary, delivering webhooks when a danger insight first appears, and ingesting uploads from a physical weather station.
+The SPA renders the forecast entirely from its own upstream calls and does not need the backend to work. Pull the backend out and the daily summary, the accuracy panel and the neighbourhood station reading go with it; nothing else moves.
+
+The backend exists for the things a browser cannot do, most of which have to happen while nobody is looking: snapshotting forecasts hourly so accuracy can be graded later, composing a daily summary, delivering webhooks when a danger insight first appears, ingesting uploads from a physical weather station, and holding the Weather Underground key so the browser can read a neighbourhood station without ever being handed a credential.
+
+A separate `mcp-weather` container reads the same backend and exposes the forecast, the station readings and the accuracy history to Claude as MCP tools. It is a consumer of this app rather than part of it, and its own source is private too.
 
 ### The frontend and backend share domain logic rather than copying it
 
@@ -107,18 +134,19 @@ Every derived value is a pure function with the clock passed in as an argument. 
 | Tests | Vitest with v8 coverage, Playwright against mocked upstreams |
 | CI | eslint at `--max-warnings 0`, prettier check, unit tests, client build, server build |
 
-There is no component library, no CSS framework and no charting library. Styling is hand written CSS with custom properties, the temperature chart is hand rolled SVG, and the condition marks are custom SVG glyphs rather than an icon pack.
+There is no component library, no CSS framework, no charting library and no map library. Styling is hand written CSS with custom properties, the temperature chart is hand rolled SVG, the condition marks are custom SVG glyphs rather than an icon pack, and both maps, the radar screen and the station picker, are raster tiles positioned by a hand rolled tile grid.
 
-Measured on 2026-08-21 against the current tree:
+Measured on 2026-08-27 by running the suite against the current tree, not by recalling a previous run:
 
 | Metric | Value |
 |---|---|
-| Unit tests | 1,778 across 73 files |
+| Unit tests | 2,165 across 91 files |
 | End to end tests | 43 Playwright tests, upstreams mocked |
-| Statement coverage | 97.98 percent |
-| Branch coverage | 91.55 percent |
-| Function coverage | 98.5 percent |
-| Source under test | roughly 22,000 lines of TypeScript across 171 non test files |
+| Statement coverage | 97.66 percent |
+| Branch coverage | 91.46 percent |
+| Function coverage | 98.4 percent |
+| Line coverage | 98.76 percent |
+| Source under test | roughly 28,000 lines of TypeScript across 190 non test files |
 
 The tests worth pointing at are not the ones that assert a number renders. They are the ones that assert something is **absent**: relative humidity never appears on the windows decision card, the History archive is not fetched until that screen is opened (the test counts requests to prove it), and switching to Celsius leaves no Fahrenheit anywhere on the Now screen.
 
@@ -128,6 +156,12 @@ Each of these was a real fork with a cheaper option on the other side. Each says
 
 **Compute the NWS heat index instead of reusing the model's feels like.** Open-Meteo's `apparent_temperature` is a Steadman style figure that folds in wind chill and radiation. It is not the NWS heat index, and every published hydration and exertion guideline is written against the NWS number. The app implements NOAA's reference algorithm, the Rothfusz regression with both published corrections. It is deliberately **not** floored at the air temperature: at 100°F and 10 percent humidity the heat index really is about 94°F, because sweat evaporates freely in very dry air. An earlier draft clamped it, silently cancelling the dry air correction, and a test caught that and now guards it.
 *Reverses if:* the guidelines the app is trying to line up with change to a Steadman basis.
+
+**Take the rain chance from the National Weather Service, and quote the forecaster.** The hero's chance of rain came from Open-Meteo with no `models=` parameter, which is `best_match`. On 2026-08-27 in Ithaca that picked a model reading 40 percent and overcast, while NWS was calling 85 percent and thunderstorms between 2pm and 4pm. ECMWF said 98 percent and ICON said 90 percent with a thunderstorm code, so the number the app happened to be printing was the outlier of the four. An app whose thesis is weather you can act on cannot show 19 percent on a day the government is forecasting storms. The hero now takes the probability from NWS wherever NWS covers the point, and prints the forecaster's own sentence with attribution. The obvious alternative was Weather Underground, which is what prompted the whole investigation: its forecast is a paid tier, and the key this app holds is a PWS contributor key entitled only to observation endpoints. NWS is free, keyless, authoritative for US convective weather, already in use here for alerts and station observations, and it publishes prose written by a human forecaster. That last part matters: it is a better answer than the LLM summaries that were switched off in August for contradicting the app's own classifier.
+*Reverses if:* the app is used mostly outside the United States, where the point lookup answers 404 and every reader falls back to the model anyway.
+
+**Let an unkeyed basemap render watermarked rather than not at all.** CARTO began requiring a key, and it refuses **silently**: an unkeyed request returns HTTP 200 with a valid PNG that has "API KEY REQUIRED" printed across the picture. Nothing throws, nothing retries, and a check that counts loaded tiles passes while the map is unreadable. The key is a build time Vite value, so it is inlined into the shipped bundle in plain text, which is acceptable only because it is a basemap key scoped to tile reads and is treated as published rather than secret. An absent key degrades to the watermarked tiles instead of removing the map, because a missing configuration knob should not take a screen out.
+*Reverses if:* CARTO's terms stop permitting a key to be distributed in a client bundle, at which point the tiles have to be proxied through the backend like the Weather Underground key already is.
 
 **Grade forecasts against the earliest snapshot held, not the latest.** A forecast issued at noon for that same afternoon is barely a forecast, and grading against it would flatter the model. Each date is scored against the longest lead available.
 *Reverses if:* the report ever needs to answer "how good was the 6 hour forecast", which is a different question and needs its own column rather than a redefinition of this one.
@@ -196,6 +230,7 @@ The measurements here exist because I decided in advance what would settle a que
 
 ## Documentation
 
+- [Changelog](CHANGELOG.md), what shipped and when, backfilled from the private repository's history
 - [Architecture](docs/architecture.md), the module map, the shared logic contract, and the request paths
 - [Decisions](docs/decisions.md), the long form versions with what was rejected
 - [Security](docs/security.md), the threat model, the controls, and how each was verified

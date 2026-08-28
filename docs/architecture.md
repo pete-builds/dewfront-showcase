@@ -4,9 +4,9 @@ DewFront is two deployable units and one codebase.
 
 ## The two units
 
-**The SPA.** A React 19 bundle served by nginx from a multi stage Docker image. It renders entirely from its own calls to public, keyless upstreams. Pull the backend out and the app still works: you lose the daily summary, the accuracy panel and the station reading, and nothing else.
+**The SPA.** A React 19 bundle served by nginx from a multi stage Docker image. It renders the forecast entirely from its own calls to public upstreams, all of them keyless except the CARTO basemap. Pull the backend out and the app still works: you lose the daily summary, the accuracy panel and the neighbourhood station reading, and nothing else.
 
-**The backend.** A Fastify 5 service bound to loopback, reached only through the SPA's nginx at `/api/`. It holds a SQLite database and runs hourly cron jobs. It exists for the four things a browser cannot do, all of which have to happen while nobody is looking:
+**The backend.** A Fastify 5 service bound to loopback, reached only through the SPA's nginx at `/api/`. It holds a SQLite database and runs hourly cron jobs. It exists for the five things a browser cannot do, most of which have to happen while nobody is looking:
 
 | Job | Why it cannot live in the browser |
 |---|---|
@@ -14,6 +14,9 @@ DewFront is two deployable units and one codebase.
 | Daily summary | Holds an API credential, and the result is cached per location per day rather than per visitor |
 | Webhook delivery | Fires on the first appearance of a danger insight, which nobody is watching for |
 | Station ingest | A weather station uploads to a server; it has no idea a browser exists |
+| Personal station reads | Holds the Weather Underground key. The SPA asks this service for readings rather than being handed a credential and pointed at the upstream |
+
+A third container, `mcp-weather`, reads the same backend and exposes the forecast, the station readings and the accuracy history to Claude as MCP tools. It is a consumer of the API rather than a part of the app, which is why it can be added and removed without either unit above changing.
 
 ## Request paths
 
@@ -38,9 +41,16 @@ sequenceDiagram
     B->>N: GET /api/accuracy
     N->>A: proxy to loopback
     A-->>B: per day forecast vs actual, signed bias, n
+
+    B->>N: GET /api/pws/stations, /api/pws/observation
+    N->>A: proxy to loopback
+    A->>U: keyed request, the key never leaves the host
+    A-->>B: readings only
 ```
 
-The SPA calls three read routes and nothing else. It has never called a write route.
+The SPA calls five read routes and nothing else: the daily summary, the accuracy report, the nearby personal stations, a personal station's observation, and the latest ingested station reading. It has never called a write route.
+
+The two personal station routes are GETs and so do not pass through the write gate, which is correct rather than convenient: they read public weather data and change nothing. What they must never do is hand back the key that makes them work. Neither errors when the feature is unconfigured either, because "this deployment holds no Weather Underground key" is a deployment state and not a fault in the request somebody just made: the listing answers `status: 'unavailable'` and the observation falls back to the official station, both 200.
 
 ## Module map
 
