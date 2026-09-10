@@ -4,9 +4,9 @@ DewFront is two deployable units and one codebase.
 
 ## The two units
 
-**The SPA.** A React 19 bundle served by nginx from a multi stage Docker image. It renders the forecast entirely from its own calls to public upstreams, all of them keyless except the CARTO basemap. Pull the backend out and the app still works: you lose the daily summary, the accuracy panel and the neighbourhood station reading, and nothing else.
+**The SPA.** A React 19 bundle served by nginx from a multi stage Docker image. It renders the forecast entirely from its own calls to public upstreams, all of them keyless except the CARTO basemap. Pull the backend out and the app still works: you lose the daily summary, the accuracy panel, the neighbourhood station reading and the pollen screen, and nothing else.
 
-**The backend.** A Fastify 5 service bound to loopback, reached only through the SPA's nginx at `/api/`. It holds a SQLite database and runs hourly cron jobs. It exists for the five things a browser cannot do, most of which have to happen while nobody is looking:
+**The backend.** A Fastify 5 service bound to loopback, reached only through the SPA's nginx at `/api/`. It holds a SQLite database and runs hourly cron jobs. It exists for the six things a browser cannot do, most of which have to happen while nobody is looking:
 
 | Job | Why it cannot live in the browser |
 |---|---|
@@ -15,6 +15,7 @@ DewFront is two deployable units and one codebase.
 | Webhook delivery | Fires on the first appearance of a danger insight, which nobody is watching for |
 | Station ingest | A weather station uploads to a server; it has no idea a browser exists |
 | Personal station reads | Holds the Weather Underground key. The SPA asks this service for readings rather than being handed a credential and pointed at the upstream |
+| Pollen | Holds the Google Pollen key, and rations it. This upstream is BILLED per request, so the count of calls is a correctness property and not just a performance one: answers are cached for six hours on coordinates rounded to about 11 kilometres, which is coarser than pollen varies and coarse enough that a town shares one billed call. Failures are cached too, because the likeliest two, a location the model does not cover and an exhausted quota, are exactly the ones that would otherwise re-bill on every page load |
 
 A third container, `mcp-weather`, reads the same backend and exposes the forecast, the station readings and the accuracy history to Claude as MCP tools. It is a consumer of the API rather than a part of the app, which is why it can be added and removed without either unit above changing.
 
@@ -115,7 +116,8 @@ Every upstream is treated as optional, and each degradation is specific rather t
 |---|---|
 | Alerts endpoint (400 outside the US) | No alerts banner, silently |
 | Station endpoint (404 outside the US) | The modelled reading, with the source label saying so |
-| Air quality | The window verdict computes without an air term |
+| Air quality | The window verdict computes without an air term, and the Details panel is absent rather than empty |
+| Pollen, unconfigured or uncovered | Its own screen says which of the two it is, in different words, because they send a reader to different places. Nothing else on the site changes |
 | Radar above the free tier's zoom limit | Handled explicitly, because that API returns a placeholder tile with HTTP 200 rather than an error |
 | The backend entirely | The three panels that need it, and nothing else |
 | The LLM gateway | The composed narrative, which is a designed path rather than a fallback in the apologetic sense |

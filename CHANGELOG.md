@@ -8,6 +8,16 @@ The app has run as `0.5.0` since the decision-first redesign on 2026-08-17 and t
 
 ---
 
+## 2026-09-10
+
+**Two air readings, and the first upstream that costs money per request.**
+
+- Show the air quality data the app already had. Every page load has fetched a week of hourly AQI, PM2.5, PM10, ozone and NO2 since air quality was added, and rendered one number out of it: a tile with the composite index and its EPA band. The Details screen now carries a panel with the whole scale under the reading, the four pollutants with their concentrations, and the day's course around now. No new upstream, no key, no extra request. The panel also names the pollutant driving the index, and that comes from Open-Meteo's own `us_aqi_*` sub-indices rather than being derived here: the US AQI is defined as the maximum of them, so the one equal to the composite is the driver. When SO2 or CO is the driver, which the app does not display, no visible pollutant matches and the panel says nothing rather than blaming the highest one it can see.
+- Add a pollen screen, on Google's Pollen API. Open-Meteo cannot answer this outside Europe: its pollen fields come from the CAMS European domain and North America returns HTTP 200 with every value `null`, which is a green request and a dead panel. Probed at Ithaca with Berlin as a control on the same request.
+- The pollen upstream is the first one here that is BILLED per request, and that changed the design rather than just the config. It is held server side, because a key in a bundle is a published key and a public site's page loads are not a budget anybody controls. Answers are cached for six hours on coordinates rounded to about 11 kilometres, which is coarser than pollen varies and coarse enough that a town shares one billed call rather than one per reader. **Failures are cached too**, and that took a second attempt: the cache returns null for a miss, so storing the snapshot directly made a cached failure indistinguishable from nothing cached. It compiled, it passed, and it would have re-billed every page load for exactly the two likeliest failures, a location the model does not cover and an exhausted quota. The value is boxed, and there is a test that reads three calls instead of one without the box.
+- Pollen is reached from Details rather than from the tab strip. The strip activates on arrow keys, so a tab there would spend a call on anyone passing through on the way to somewhere else. The query is enabled only while its screen is open, and the condition lives beside the state that decides it rather than inside the component, so a later change to how the screen mounts cannot quietly undo it. An end to end test counts the requests, because a unit test cannot see whether one left the browser.
+- Unconfigured, uncovered and unreachable get three different sentences. They send a reader to three different places: the deployment, nowhere, and back in an hour. A pollen index of zero stays distinct from an absent one throughout, because "no pollen in the air" and "this place is not modelled" are opposite answers and a null folded into a zero asserts the wrong one confidently.
+
 ## 2026-08-27
 
 **The rain chance stopped coming from a model that disagreed with the government.**

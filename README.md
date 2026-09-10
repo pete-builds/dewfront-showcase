@@ -96,20 +96,24 @@ flowchart TD
         SPA["React 19 SPA<br/>Vite, TanStack Query"] --> LS[("localStorage<br/>settings only")]
     end
 
-    SPA -->|"five read routes"| NGINX
+    SPA -->|"six read routes"| NGINX
     SPA -->|"every render, no proxy"| UP
     SPA -->|"build time key, inlined in the bundle"| CARTO
     API -->|"hourly snapshots"| UP
     API -->|"operator key, never handed to the browser"| WU
+    API -->|"billed key, cached on an 11km grid"| POLLEN
 
     UP["Keyless public upstreams<br/>Open-Meteo forecast, archive, air quality and geocoding,<br/>api.weather.gov, Nominatim, Zippopotam.us, RainViewer"]
     CARTO["CARTO basemap tiles"]
     WU["Weather Underground<br/>personal station network"]
+    POLLEN["Google Pollen<br/>tree, grass and weed forecast"]
 ```
 
 The SPA renders the forecast entirely from its own upstream calls and does not need the backend to work. Pull the backend out and the daily summary, the accuracy panel and the neighbourhood station reading go with it; nothing else moves.
 
-The backend exists for the things a browser cannot do, most of which have to happen while nobody is looking: snapshotting forecasts hourly so accuracy can be graded later, composing a daily summary, delivering webhooks when a danger insight first appears, ingesting uploads from a physical weather station, and holding the Weather Underground key so the browser can read a neighbourhood station without ever being handed a credential.
+The backend exists for the things a browser cannot do, most of which have to happen while nobody is looking: snapshotting forecasts hourly so accuracy can be graded later, composing a daily summary, delivering webhooks when a danger insight first appears, ingesting uploads from a physical weather station, and holding the two upstream keys so the browser can read a neighbourhood station and a pollen forecast without ever being handed a credential.
+
+The pollen key is the one that changed the shape of this. Every other upstream here is free, so the only question a key raises is whether it leaks. Google bills the Pollen API per request past a free monthly cap, which makes the number of calls a correctness property: the server caches every answer, failures included, for six hours on coordinates rounded to about 11 kilometres, so a whole town shares one billed call rather than one per reader. The screen is reached from Details rather than from the tab strip, because that strip activates on arrow keys and a tab there would spend a call on anyone passing through.
 
 A separate `mcp-weather` container reads the same backend and exposes the forecast, the station readings and the accuracy history to Claude as MCP tools. It is a consumer of this app rather than part of it, and its own source is private too.
 

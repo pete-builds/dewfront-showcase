@@ -47,10 +47,13 @@ The location listing returned raw stored coordinates, including 15 decimal brows
 | Webhook listing | Origins only, the full URL is never returned |
 | All reads | Open by design. The whole site is public weather data |
 | Personal station reads | Operator key held server side, never returned; station ids normalised and length capped before they reach an upstream URL |
+| Pollen reads | Google key held server side, never returned. A non 2xx from the upstream is never read or surfaced, because Google echoes the failing request back and the request carries the key. Coordinates are rounded to a grid before they reach the client, so the cache key space is not whatever precision a caller chose to send |
 | Transport | HSTS on the tunnel, rendered through an nginx `map` so the plain HTTP LAN path asserts nothing untrue |
 | Errors | `{error, detail}` with no path, no upstream URL and no environment value |
 
 Both credential gates fail closed. With the variable unset, the routes they guard refuse everything rather than falling open, so a deploy that forgets a secret leaves a working read only site rather than an open write surface. The boot log reports whether each gate is configured and never the values.
+
+The two FEATURE keys, Weather Underground and Google Pollen, fail closed in the other sense: absent, the feature reports itself unconfigured and the upstream is never called at all. For the pollen key that is a spending control as well as a security one. It is the only upstream in this app that costs money per request, so an unconfigured deployment must make zero calls rather than degraded ones, and the boot log's `pollenConfigured` line is how that is read back after a deploy without sending a request.
 
 The gate runs before routing, so an unauthenticated request to a path that does not exist answers 401 rather than 404. That is one fewer way to enumerate the API from outside.
 
