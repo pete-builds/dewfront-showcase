@@ -54,6 +54,8 @@ Each entry states the decision, the option on the other side of the fork, and wh
 
 **The subtle part.** The result is deliberately not floored at the air temperature. At 100°F and 10 percent humidity the heat index is genuinely about 94°F, because sweat evaporates freely in very dry air. An earlier draft clamped it to the air temperature, which silently cancelled the dry air correction. A test caught it and now guards it.
 
+**Correct arithmetic is not enough.** A heat index computed exactly right on one bad hour is still a wrong alert. Miami was shown a 123°F danger warning built from a single upstream hour reporting an 87°F dew point with 74°F and 76°F either side, which is an eleven degree round trip the atmosphere does not make. The alert now reports the level a spell HOLDS rather than the highest hour in it, computed as the best three hour window's minimum, so an hour can only lift the answer as far as its neighbours carry it. The current reading stays exempt, because it is an observation rather than a forecast hour and it is what the hero prints as "feels like". The same fault, and the same fix, as the narrative's dew point clause.
+
 **Reverses if:** the guidelines the app aligns with move to a Steadman basis.
 
 ---
