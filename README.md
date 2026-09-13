@@ -144,12 +144,12 @@ Measured on 2026-09-13 by running the suite against the current tree, not by rec
 
 | Metric | Value |
 |---|---|
-| Unit tests | 2,290 across 100 files |
+| Unit tests | 2,306 across 100 files |
 | End to end tests | 48 Playwright tests, upstreams mocked |
-| Statement coverage | 97.66 percent |
-| Branch coverage | 91.48 percent |
-| Function coverage | 98.47 percent |
-| Line coverage | 98.81 percent |
+| Statement coverage | 97.61 percent |
+| Branch coverage | 91.36 percent |
+| Function coverage | 98.49 percent |
+| Line coverage | 98.8 percent |
 | Source under test | roughly 31,000 lines of TypeScript across 199 non test files |
 
 The tests worth pointing at are not the ones that assert a number renders. They are the ones that assert something is **absent**: relative humidity never appears on the windows decision card, the History archive is not fetched until that screen is opened (the test counts requests to prove it), and switching to Celsius leaves no Fahrenheit anywhere on the Now screen.
