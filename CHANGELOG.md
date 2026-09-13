@@ -8,6 +8,18 @@ The app has run as `0.5.0` since the decision-first redesign on 2026-08-17 and t
 
 ---
 
+## 2026-09-13
+
+**A day stopped meaning midnight to midnight, and the outage banner stopped guessing.**
+
+- Split the forecast day at 7 AM and 7 PM, and give each half its own rain chance and its own dew point band. The calendar day was wrong in a way that read as confident: measured on the live site this morning, the Ithaca row advertised a 94 percent chance of rain on a day whose hours between 10 AM and 5 PM never went above 5 percent. The 94 was a 1 AM thunderstorm, which anybody watching the sky called the previous night's storm, filed under the following morning because the clock had rolled over. The error did not run one way either, so it could not be read around: two rows later the same rollup understated a day whose rain was all in the small hours.
+- The boundary is not invented here. NWS publishes two 12-hour periods per day with a separate probability on each, and read live from `api.weather.gov` on this date its "Tonight" carried 62 percent while the following "Monday" carried 3 percent: never merged upstream, merged only by this app. Apple's WeatherKit defines its overnight forecast as 7 PM to 7 AM, and Google's Weather API defines daytime as 7 AM to 7 PM with its own probability on each half. Two of those landed on 7 AM independently. MET Norway sidesteps the question entirely by publishing 6-hour blocks.
+- The split is the load-bearing half of the change, not the boundary. A single number for a whole day cannot say "dry afternoon, wet night" no matter which hour it is taken from, which is why every service above publishes two.
+- The row's dew point band is now the MEAN of each half rather than the overnight minimum. The minimum is the single most favourable hour of the twenty four, and it painted a day averaging 67°F "comfortable" green with the contradicting figure printed in grey beside it on the same row. The range bar's gradient runs the night band into the day band, so the row shows the air changing rather than settling on one colour, and the legend now names the colour channel: the bar encodes temperature in its length and dew point in its colour, and only the length had ever been explained.
+- Caught while building, not after: a warm front after dark can leave the night warmer than the day before it, so the daytime high and the overnight low can invert. Taking the difference without sorting gave that day a negative bar width, which the minimum-length clamp turned into a three percent stub pinned at the wrong end of the track. The geometry sorts its ends now, with a test.
+- Wind and UV moved into the day's expansion. The row carries two readings well or five badly, and rain and dew point are the two anybody acts on.
+- **Stop announcing an outage the app never checked for.** The stale banner read "Last forecast, just now. The weather service is not answering", which are two sentences that cannot both be true. The forecast query holds a fifteen minute freshness window and seeds itself from the browser's saved copy, so a reload inside that window served the saved forecast and never contacted the provider at all, while the banner took the mere presence of saved data as proof the provider was down. Serving a cache is evidence of a cache. The query now always revalidates on mount, which turns the guess into an observation, and the banner says "not answering" only when a request actually failed. Verified live in three states: a healthy reload shows no banner, a blocked provider still shows the outage, and recovery clears it.
+
 ## 2026-09-10
 
 **Two air readings, and the first upstream that costs money per request.**

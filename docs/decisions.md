@@ -158,6 +158,24 @@ Each entry states the decision, the option on the other side of the fork, and wh
 
 ---
 
+## A day runs 7 AM to 7 AM, and every row shows both halves
+
+**Decision.** A forecast day opens at 7 AM, splits at 7 PM, and closes at 7 AM the next morning. Each half carries its own probability of rain and its own dew point band, and the ten day row renders both rather than one number for the day.
+
+**The other side.** Keep the calendar day, which is what Open-Meteo's daily block aggregates and what every rollup in the app inherited. One number per day per reading is a narrower row, a simpler component, and a shape that matches the upstream exactly with no slicing of our own.
+
+**Why this way.** The calendar day answers a question nobody asks. Measured on 2026-09-13 the Ithaca row advertised 94 percent rain on a day whose daylight hours never passed 5 percent: the 94 belonged to a 1 AM thunderstorm, which is the previous night's storm by any human account, and a midnight boundary had filed it under the following morning. The error is not a consistent bias either, so a reader cannot correct for it: the same rollup understates a day whose weather sits either side of midnight.
+
+The split matters more than the boundary. A single number for a day cannot say "dry afternoon, wet night" no matter which hour it is taken from. That is why NWS publishes two 12-hour periods with a separate probability on each, why Apple's WeatherKit carries a daytime and an overnight forecast, and why Google's Weather API carries a probability on each half. 7 AM is where Apple and Google both independently drew the line.
+
+**The cost, paid deliberately.** Open-Meteo's daily high, low and UV are calendar day aggregates, so the row can no longer take its temperatures from them without mixing two windows in one line. Those come from the hourly series now, sliced on the same boundary as everything else beside them, and the provider figures survive only as the fallback for a row the hourly series does not reach.
+
+**Enforcement.** The regression test is the 1 AM storm itself, asserted to land on the night of the day before. It was run against the old calendar day rule first and fails there, because a test that has never failed is a decoration rather than a check.
+
+**Reverses if:** readers turn out to read the two halves as two separate days. The labels carry that distinction and nothing else does.
+
+---
+
 ## Take the hero's rain chance from NWS rather than the model's default pick
 
 **Decision.** Where the National Weather Service covers the point, the headline chance of rain comes from the NWS point forecast, and the forecaster's own sentence is printed with attribution. Outside that coverage the app falls back to Open-Meteo's daily figure.

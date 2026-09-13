@@ -208,7 +208,7 @@ Longer write ups of incidents on these systems: [field-notes](https://github.com
 
 ## More screens
 
-![The ten day list, with a comfort ramped range bar and a dew point comfort pill per day](screenshots/ten-day.png)
+![The ten day list. Each row splits into a day half and a night half with its own rain chance and dew point band, above a range bar whose gradient runs the night's comfort colour into the day's](screenshots/ten-day.png)
 
 ![The history screen: local climate archive for the selected point](screenshots/history.png)
 
