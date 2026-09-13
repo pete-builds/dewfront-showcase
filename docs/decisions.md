@@ -221,3 +221,15 @@ The split matters more than the boundary. A single number for a day cannot say "
 **What was removed after being built, which is the part worth recording.** A per station quality control verdict, a "showing the 5 nearest of 34" line, and a second separate control for the official station. The first two reported on the picker's own internals rather than helping anyone choose. The third exposed a distinction, official versus personal, that is an implementation detail the reader was being asked to hold. All three were working code, and deleting them was the improvement.
 
 **Reverses if:** the tile dependency becomes a liability, for example a basemap provider whose terms stop suiting a published client key, and the map has to fall back to the list it replaced.
+
+## Cache the shell, never the weather
+
+**Decision.** The service worker stores exactly the files the build emitted plus the manifest and icons, a list fixed at build time, and returns without answering for everything else. Offline, the page opens and says the forecast cannot be reached, and it shows no number.
+
+**The other side.** Every offline-first recipe caches API responses with a stale-while-revalidate policy, and it is a few lines with a library. A reader on a train would see yesterday's forecast instead of an empty state.
+
+**Why this way.** The whole claim of this app is weather you can act on, and a dew point from Tuesday shown on Thursday with nothing marking it breaks that claim in the one place it counts. The app had already been burned twice by serving something stored earlier: a banner that announced an outage the app never checked for, and a green test suite hiding a bundle that never compiled. A worker adds a third class, readers kept on an old bundle after a deploy. Shell only removes the first risk entirely and contains the third behind a versioned cache that a deploy replaces on the next load.
+
+**What the test had to prove.** Not the code path but the cache contents, and not only that the real worker stores no weather but that the assertion would fail against one that does. The same audit runs against a worker that caches everything and has to catch all of it, because this repo has shipped two assertions that matched nothing and passed either way.
+
+**Reverses if:** the product decides a dated, clearly labelled last forecast is better than an empty offline screen. The replay already exists for provider outages; what would change is the gate that refuses to show it when the device itself is offline.

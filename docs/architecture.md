@@ -106,7 +106,7 @@ Nothing under the shared logic tree reads `Date.now()`. Every function that need
 
 **Server side**, one SQLite file, bind mounted so it survives every rebuild: registered locations (capped, deduped on rounded coordinates), hourly forecast snapshots keyed on target date and lead time, hourly station observations, station uploads with their raw payload, cached daily summaries, webhook URLs, and the active insight state that lets onset dedupe survive a restart. No accounts, no sessions, no personal data. The one genuinely sensitive value is a webhook URL, which is why the listing endpoint returns origins only.
 
-**Client side**, localStorage only: the selected place, saved places, the unit system, the indoor target, the per place station pin, the chosen activity profile, and the optional personal weather station credentials. Malformed or hand edited storage degrades to defaults rather than crashing the app on boot, and a payload written by an older version reads back as simply unconfigured. The activity profile is stored as a bare string rather than a union of known ids, so a profile retired in a later version degrades to the default instead of failing the parse.
+**Client side**, localStorage and one cache. localStorage holds the selected place, saved places, the unit system, the indoor target, the per place station pin, the chosen activity profile, the optional personal weather station credentials, and the last forecast that arrived, kept for up to three hours so a provider outage costs freshness rather than the whole screen. Cache Storage holds exactly one thing, the app shell (`index.html`, the hashed bundle, the manifest and the icons), written by a service worker whose list of cacheable URLs is fixed at build time. No reading of any kind is ever in that cache, and no request to `/api/` or to any upstream is intercepted by the worker at all. Malformed or hand edited storage degrades to defaults rather than crashing the app on boot, and a payload written by an older version reads back as simply unconfigured. The activity profile is stored as a bare string rather than a union of known ids, so a profile retired in a later version degrades to the default instead of failing the parse.
 
 ## Failure behaviour
 
@@ -114,12 +114,14 @@ Every upstream is treated as optional, and each degradation is specific rather t
 
 | Upstream fails | What the user sees |
 |---|---|
+| Open-Meteo forecast, while online | The last forecast that loaded, revalidated on every mount, for up to three hours; past that, an honest error |
 | Alerts endpoint (400 outside the US) | No alerts banner, silently |
 | Station endpoint (404 outside the US) | The modelled reading, with the source label saying so |
 | Air quality | The window verdict computes without an air term, and the Details panel is absent rather than empty |
 | Pollen, unconfigured or uncovered | Its own screen says which of the two it is, in different words, because they send a reader to different places. Nothing else on the site changes |
 | Radar above the free tier's zoom limit | Handled explicitly, because that API returns a placeholder tile with HTTP 200 rather than an error |
 | The backend entirely | The three panels that need it, and nothing else |
+| The network entirely | The shell opens from the service worker's cache and says the forecast cannot be reached. It shows no number, even though the last forecast is sitting in localStorage: offline is decided by the browser's own online flag, not by whether something is stored. A provider outage while online is the different case above |
 | The LLM gateway | The composed narrative, which is a designed path rather than a fallback in the apologetic sense |
 
 The last one has a specific trap worth recording: pointing the summary at a reasoning model returns HTTP 200 with empty content, because the whole token budget goes to the reasoning channel and never reaches the output. The client treats empty as null and degrades correctly, but it would call the gateway on every single request forever. An empty 200 is not a failure any status code will tell you about.

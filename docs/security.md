@@ -49,6 +49,7 @@ The location listing returned raw stored coordinates, including 15 decimal brows
 | Personal station reads | Operator key held server side, never returned; station ids normalised and length capped before they reach an upstream URL |
 | Pollen reads | Google key held server side, never returned. A non 2xx from the upstream is never read or surfaced, because Google echoes the failing request back and the request carries the key. Coordinates are rounded to a grid before they reach the client, so the cache key space is not whatever precision a caller chose to send |
 | Transport | HSTS on the tunnel, rendered through an nginx `map` so the plain HTTP LAN path asserts nothing untrue |
+| Service worker | Allowlist, not denylist: the worker can only store the shell files named at build time, and does not intercept `/api/` or any upstream. Served `Cache-Control: no-store` from its own nginx block so the edge never holds a copy, with two kill switches, `?sw=off` for one reader and a build flag that ships a self-unregistering worker to every reader |
 | Errors | `{error, detail}` with no path, no upstream URL and no environment value |
 
 Both credential gates fail closed. With the variable unset, the routes they guard refuse everything rather than falling open, so a deploy that forgets a secret leaves a working read only site rather than an open write surface. The boot log reports whether each gate is configured and never the values.
@@ -66,6 +67,8 @@ Every control in the table above was verified from off the host after deployment
 The HSTS header added later made the same point twice. It went into all four nginx location blocks rather than the server level alone, for exactly the reason above, and its `max-age` is a deliberate five minutes: HSTS is a one way door for its own lifetime, a browser that has seen it refuses plain HTTP to the host until it expires, and no server side change shortens that. Five minutes means a mistake costs five minutes.
 
 Then the check on it came back clean and was wrong. The header appeared absent on `/assets/`, which is the exact shape of a real scoping failure. It was a stale Cloudflare edge object: `cf-cache-status: HIT` with an `age` of 4,417 seconds, predating the deploy by over an hour. Disproved two ways, with a cache busting query string that forced a new cache key, and with a request straight at nginx bypassing the edge. **On a site behind a CDN, a header check against a cacheable path can lie.** Read `cf-cache-status` and `age` before believing a negative, or bypass the edge outright.
+
+The service worker's script is the path where that lesson had teeth. Before it existed, `/sw.js` fell through to the SPA catch-all, and the header check on that URL showed Cloudflare caching it by extension with `max-age=14400` written over nginx's own `no-cache`. A worker held at the edge can be neither updated nor killed, whatever the deploy does, so the block that serves it sends `no-store`, and the deploy is not finished until the live response says so.
 
 ## What is deliberately not defended
 

@@ -93,7 +93,8 @@ flowchart TD
     NGINX -->|"serves the bundle"| SPA
 
     subgraph browser["Browser"]
-        SPA["React 19 SPA<br/>Vite, TanStack Query"] --> LS[("localStorage<br/>settings only")]
+        SPA["React 19 SPA<br/>Vite, TanStack Query"] --> LS[("localStorage<br/>settings, last forecast")]
+        SW["Service worker<br/>app shell only, never a reading"] --> SPA
     end
 
     SPA -->|"six read routes"| NGINX
@@ -136,7 +137,7 @@ Every derived value is a pure function with the clock passed in as an argument. 
 | Storage | SQLite, bind mounted so it survives every rebuild |
 | Delivery | Multi stage Docker build, nginx serving the static bundle, Cloudflare Tunnel |
 | Tests | Vitest with v8 coverage, Playwright against mocked upstreams |
-| CI | eslint at `--max-warnings 0`, prettier check, unit tests, client build, server build |
+| CI | eslint at `--max-warnings 0`, prettier check, unit tests, client build, server build, Playwright, image scan, secret scan |
 
 There is no component library, no CSS framework, no charting library and no map library. Styling is hand written CSS with custom properties, the temperature chart is hand rolled SVG, the condition marks are custom SVG glyphs rather than an icon pack, and both maps, the radar screen and the station picker, are raster tiles positioned by a hand rolled tile grid.
 
