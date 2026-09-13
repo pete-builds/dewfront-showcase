@@ -144,8 +144,8 @@ Measured on 2026-09-13 by running the suite against the current tree, not by rec
 
 | Metric | Value |
 |---|---|
-| Unit tests | 2,302 across 99 files |
-| End to end tests | 48 Playwright tests, upstreams mocked |
+| Unit tests | 2,304 across 99 files |
+| End to end tests | 49 Playwright tests, upstreams mocked |
 | Statement coverage | 97.61 percent |
 | Branch coverage | 91.36 percent |
 | Function coverage | 98.49 percent |
