@@ -6,6 +6,8 @@ What changed in DewFront, newest first. Dates are UTC. Every entry shipped to [d
 
 ## 2026-09-13
 
+- Daily summary for a place outside the register is shared per 11 km cell and capped per hour, so a coordinate sweep cannot run up the model bill. Past the cap the summary is the composed narrative, labelled as such.
+- A fresh clone now runs on plain Docker: nginx reaches the API by service name instead of a loopback address that only worked on the production host.
 - Public changelog at [dewfront.com/changelog](https://dewfront.com/changelog), linked from the footer.
 - Installs as an app. The service worker caches the app shell and never a reading. Offline, the page says the forecast cannot be reached instead of showing an old number.
 - Worker kill switch: `?sw=off` on any URL, or a build flag that removes it from every browser.
