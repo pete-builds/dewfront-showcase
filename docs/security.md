@@ -35,6 +35,22 @@ The location listing returned raw stored coordinates, including 15 decimal brows
 
 **Fixed by** rounding coordinates to three decimals, about 110 metres, on the way out, and deduping registration on the same rounding. The endpoint lists places, not people.
 
+### The same coordinates, written to the access log
+
+Found 2026-09-14, and it is the more instructive half of the finding above. Rounding on the way out fixed what the API **returned**. It did nothing about what the web server **recorded**, and nobody had counted the log as somewhere the data went.
+
+Every `/api/` call on this app carries the reader's coordinates as query parameters, and nginx's default `main` format writes the full request line including the query string, alongside `$remote_addr` and `$http_x_forwarded_for`. So every page load appended a line pairing a location accurate to well under a millimetre with the address that asked for it:
+
+```
+"GET /api/summary/daily?lat=42.469519663759044&lon=-76.46970321488456" ... "<ip>"
+```
+
+The finding above was closed and the class was not. A control applied at one surface reads as a property of the system, and the log is a surface almost nothing audits.
+
+**Fixed by** a dedicated log format for `/api/`: method, normalised path with no query string, status, size. No address, no forwarded address, no user agent, no referer. Enough to count traffic and catch a 5xx, nothing that identifies a reader or where they are. Verified live by requesting a fifteen decimal coordinate and reading back a log line that contained none of it.
+
+The app now records its own coverage metric instead, snapped to the ~11 km grid the guest summary cache already used, emitted with nothing beside it. A cell is a town, not a person, and the granularity is pinned by a test so a future cache tuning cannot sharpen it into a location trail as a side effect.
+
 ## The controls now
 
 | Surface | Control |
@@ -44,6 +60,8 @@ The location listing returned raw stored coordinates, including 15 decimal brows
 | Webhook delivery | Destination re resolved and re checked per delivery, redirects refused |
 | Station ingest | Shared passkey in the body, timestamp bounded, constant response |
 | Location listing | Coordinates rounded on output |
+| Access log | Query string and caller address never recorded on `/api/` |
+| Coverage metric | ~11 km grid cell only, with no identifier beside it |
 | Webhook listing | Origins only, the full URL is never returned |
 | All reads | Open by design. The whole site is public weather data |
 | Personal station reads | Operator key held server side, never returned; station ids normalised and length capped before they reach an upstream URL |
