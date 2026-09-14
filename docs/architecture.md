@@ -11,7 +11,7 @@ DewFront is two deployable units and one codebase.
 | Job | Why it cannot live in the browser |
 |---|---|
 | Forecast snapshots | Grading a forecast means recording what was said before the day happened, on a schedule, whether or not a tab is open |
-| Daily summary | Holds an API credential, and the result is cached per location per day rather than per visitor |
+| Daily summary | Holds an API credential. A registered place's summary is cached per location for three hours rather than per visitor; a point outside the register is snapped to an 11 kilometre grid, cached in memory, and counted against an hourly ceiling on gateway completions, so a coordinate sweep degrades to the composed narrative instead of running up a bill |
 | Webhook delivery | Fires on the first appearance of a danger insight, which nobody is watching for |
 | Station ingest | A weather station uploads to a server; it has no idea a browser exists |
 | Personal station reads | Holds the Weather Underground key. The SPA asks this service for readings rather than being handed a credential and pointed at the upstream |
