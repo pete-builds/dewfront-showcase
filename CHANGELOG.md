@@ -4,6 +4,16 @@ What changed in DewFront, newest first. Dates are UTC. Every entry shipped to [d
 
 ---
 
+## 2026-09-14
+
+- Desktop layout. The page used to stop widening at 1088px, so a 1920px screen showed the tablet layout with a third of the screen empty and the same amount of scrolling.
+- On a wide screen the hero splits in two: where you are, the temperature, the dew point and feels-like on the left, the day ahead and the forecaster's sentence on the right. The whole 24-hour strip now sits above the fold.
+- Next 7 days and Details share a row on a wide screen, and the Details tiles divide evenly instead of wrapping four and then two.
+- Summary refreshes every hour in an open tab. It used to keep whatever sentence the tab was opened with.
+- Fixed the forecaster's sentence being hours behind. The National Weather Service serves a separately cached copy per content type, and the one this app asked for was a three and a half hour old issuance: at 9pm it still read "showers and thunderstorms before 7pm".
+- Forecast and the forecaster's sentence now refresh every hour in an open tab.
+- The station name and the station picker moved beside the readings they describe instead of sitting centred under the whole panel.
+
 ## 2026-09-13
 
 - Daily summary for a place outside the register is shared per 11 km cell and capped per hour, so a coordinate sweep cannot run up the model bill. Past the cap the summary is the composed narrative, labelled as such.
