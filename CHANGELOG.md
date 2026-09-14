@@ -1,11 +1,14 @@
 # Changelog
 
-What changed in DewFront, newest first. Dates are UTC. Every entry shipped to [dewfront.com](https://dewfront.com).
+What changed in DewFront, newest first. Each entry is dated by the weekend its work landed in. Every entry shipped to [dewfront.com](https://dewfront.com).
 
 ---
 
-## 2026-09-14
+## 2026-09-13
 
+- Privacy notice at [dewfront.com/privacy](https://dewfront.com/privacy), linked from the footer. No accounts, no cookies, no trackers, and it names every service your browser contacts directly.
+- The web server no longer logs the query string or the caller's address on API requests. It had been recording coordinates to fifteen decimal places next to the IP that sent them.
+- The app now logs which ~11 km grid cell a guest forecast was for, and nothing else, so coverage can be measured without recording anyone.
 - Desktop layout. The page used to stop widening at 1088px, so a 1920px screen showed the tablet layout with a third of the screen empty and the same amount of scrolling.
 - On a wide screen the hero splits in two: where you are, the temperature, the dew point and feels-like on the left, the day ahead and the forecaster's sentence on the right. The whole 24-hour strip now sits above the fold.
 - Next 7 days and Details share a row on a wide screen, and the Details tiles divide evenly instead of wrapping four and then two.
@@ -13,9 +16,6 @@ What changed in DewFront, newest first. Dates are UTC. Every entry shipped to [d
 - Fixed the forecaster's sentence being hours behind. The National Weather Service serves a separately cached copy per content type, and the one this app asked for was a three and a half hour old issuance: at 9pm it still read "showers and thunderstorms before 7pm".
 - Forecast and the forecaster's sentence now refresh every hour in an open tab.
 - The station name and the station picker moved beside the readings they describe instead of sitting centred under the whole panel.
-
-## 2026-09-13
-
 - Daily summary for a place outside the register is shared per 11 km cell and capped per hour, so a coordinate sweep cannot run up the model bill. Past the cap the summary is the composed narrative, labelled as such.
 - A fresh clone now runs on plain Docker: nginx reaches the API by service name instead of a loopback address that only worked on the production host.
 - Public changelog at [dewfront.com/changelog](https://dewfront.com/changelog), linked from the footer.
@@ -37,13 +37,13 @@ What changed in DewFront, newest first. Dates are UTC. Every entry shipped to [d
 - Air quality tile names the pollutant driving the index.
 - "Opens after 2 AM" reads "Open after 2am".
 
-## 2026-09-10
+## 2026-09-12
 
 - Air quality panel on Details: the full scale, four pollutants with concentrations, the day's course, and the driving pollutant.
 - Pollen screen on Google's Pollen API, reached from Details. Answers cached six hours on an 11 km grid, failures included, so a town shares one billed call.
 - Unconfigured, uncovered and unreachable pollen say three different things. Zero pollen stays distinct from no data.
 
-## 2026-08-27
+## 2026-08-29
 
 - Rain chance comes from the National Weather Service where it covers the point, with the forecaster's own sentence quoted. Open-Meteo elsewhere.
 - One forecast per page instead of three copies.
@@ -52,12 +52,9 @@ What changed in DewFront, newest first. Dates are UTC. Every entry shipped to [d
 - CARTO basemap authenticated. Unkeyed tiles were rendering "API KEY REQUIRED" with a 200.
 - One station, named once on the hero.
 
-## 2026-08-25
+## 2026-08-23
 
 - A missing dew point is no longer recorded as 0°C in the accuracy history.
-
-## 2026-08-24
-
 - The station picker is a map. Pan to find stations; every pin shows a temperature. Still no map library.
 - Only nearby official stations are offered, and always enough to choose from.
 - Stations Weather Underground flags as bad are never offered.
@@ -65,9 +62,6 @@ What changed in DewFront, newest first. Dates are UTC. Every entry shipped to [d
 - The station panel closes once a station is chosen.
 - Seven day list gets full day rows; window cards get a cold end.
 - `npm run dev:all` starts the whole stack on any machine, and the deploy works from any machine.
-
-## 2026-08-23
-
 - Two station controls merged into one, and the station is named on the hero.
 - Station pickers stop offering distant places; the operator can name a station by hand.
 - Personal stations described as neighborhood sensors.
@@ -76,9 +70,6 @@ What changed in DewFront, newest first. Dates are UTC. Every entry shipped to [d
 
 - A location can read a nearby personal weather station from Weather Underground.
 - Fixed the source picker layout and the run-together station rows.
-
-## 2026-08-21
-
 - HSTS on the public site, scoped to the tunnel.
 - Host and repository reconciled after a deploy that skipped the commit.
 - Dew point is scored in the accuracy report.
@@ -89,7 +80,7 @@ What changed in DewFront, newest first. Dates are UTC. Every entry shipped to [d
 - Footer with Threads, GitHub, LinkedIn and the data source credits.
 - Dew point is a tile like the others.
 
-## 2026-08-18
+## 2026-08-16
 
 - Three high findings closed after the public tunnel went up: webhook request forgery, unauthenticated station uploads, full-precision visitor coordinates.
 - HTTPS forced through the tunnel.
@@ -97,9 +88,6 @@ What changed in DewFront, newest first. Dates are UTC. Every entry shipped to [d
 - Cached daily summary expires after three hours.
 - The windows card names the rule that is binding.
 - Header controls collapsed to icons; the browser tab is named DewFront.
-
-## 2026-08-17
-
 - v0.5.0, the decision-first redesign: one verdict per decision, and one sentence naming the constraint.
 - Backend added, built from the app's own functions: daily summary, station card, forecast versus actual.
 - v0.3.0: three screens plus Outside and History, the insights engine, and the three-model comparison.
@@ -107,7 +95,4 @@ What changed in DewFront, newest first. Dates are UTC. Every entry shipped to [d
 - Named DewFront.
 - Two test lanes, a server build, and CI on Node 22.
 - Daylight is not "left" before sunrise.
-
-## 2026-08-16
-
 - First commit: a weather instrument panel with dew point in the headline.
