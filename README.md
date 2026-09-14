@@ -132,7 +132,7 @@ Every derived value is a pure function with the clock passed in as an argument. 
 
 | Layer | Choice |
 |---|---|
-| Frontend | React 19, TypeScript 6, Vite 8, TanStack Query with a 15 minute stale time |
+| Frontend | React 19, TypeScript 6, Vite 8, TanStack Query with a 15 minute stale time and an hourly refetch on the forecast, so a tab left open all afternoon is not still showing the morning |
 | Backend | Node 22+, Fastify 5, better-sqlite3, node-cron |
 | Storage | SQLite, bind mounted so it survives every rebuild |
 | Delivery | Multi stage Docker build, nginx serving the static bundle, Cloudflare Tunnel |
