@@ -6,11 +6,11 @@ DewFront was designed and reviewed against a loopback threat model, and the code
 
 Then one commit put the app behind a public tunnel, and every one of those assumptions became false in the same moment. No application code changed. No test failed. Nothing in the deployment looked different from the inside.
 
-**Public ingress is a change to the threat model, not to the deployment.** None of the three findings below required a new bug. All three were written into the design correctly, against a world that stopped existing the day the tunnel came up.
+**Public ingress is a change to the threat model, not to the deployment.** None of the first three findings below required a new bug. All three were written into the design correctly, against a world that stopped existing the day the tunnel came up.
 
-An audit run the same day found three high severity issues, all live on the public internet.
+An audit run the same day found three high severity issues, all live on the public internet. The two found later, below them, are not tunnel findings at all: they are the same control-at-one-surface mistake reappearing on surfaces nobody had counted, first a log file and then a reader's cookie jar.
 
-## The three findings
+## The findings
 
 ### Server side request forgery with host control
 
@@ -51,6 +51,29 @@ The finding above was closed and the class was not. A control applied at one sur
 
 The app now records its own coverage metric instead, snapped to the ~11 km grid the guest summary cache already used, emitted with nothing beside it. A cell is a town, not a person, and the granularity is pinned by a test so a future cache tuning cannot sharpen it into a location trail as a side effect.
 
+### An analytics cookie the privacy notice said did not exist
+
+Found 2026-09-16, three days after the privacy notice shipped, and it is the same lesson as the access log with the surface moved again.
+
+The notice said "no cookies and no third-party trackers", and added that there was no consent banner because nothing was stored on the reader's device. The site had been loading Google Analytics on both public hostnames since long before, and GA4 sets `_ga` and `_ga_<id>` with a two year expiry by default. Both cookies were live on every real visit.
+
+Nothing in the repository was wrong in isolation. The analytics block was correct code doing exactly what its comment said, gated on hostname so local and CI runs never polluted the property. The notice was correct prose about a design nobody had checked the code against. The two were written three days apart, in different files, by someone reasoning about each on its own, and **prose is not executed**, so no gate compared them.
+
+**The instructive part is the fix that did not work.** The first attempt set `client_storage: 'none'`, shipped it, and the site went on setting both cookies with the option live in the served page. `client_storage` is a Universal Analytics parameter: GA4's gtag accepts it, raises no error and ignores it. That is the worst available shape for a privacy control, because it reads as correct in review and is wrong only in a browser. It was caught by a probe that drives a real browser at the deployed site and reads `document.cookie`, and by nothing else. Four variants measured at the real origin settled it:
+
+```
+client_storage: 'none'                     -> _ga, _ga_0PHZLR4GN4
+consent default analytics_storage denied   -> no cookies
+both                                       -> no cookies
+no analytics at all          (the control) -> no cookies, no Google hosts
+```
+
+The dead option was then removed rather than kept beside the working one. A setting that does nothing is worse than no setting, because the next reader believes it.
+
+**Then the fix that did work turned out to do something else.** Denying `analytics_storage` stopped the cookies, as measured above, on the belief that GA4 would go on counting page views as cookieless pings. It does not, in any report. GA4 keeps consent denied hits only as input to behavioural modelling, which needs a volume of consented traffic this site will never have, and with no banner nothing could ever grant consent later. From 2026-09-16 to 2026-10-05 every hit left the browser marked `gcs=G1-0`, reached Google, and the property showed nothing. That is not a privacy setting. It is analytics switched off while every visitor's request still goes to Google.
+
+So on 2026-10-05 the code and the notice were made to agree the other way. Consent mode now grants `analytics_storage`, set explicitly rather than by deleting the line so the decision is visible and a test can pin it, and the privacy notice names both cookies, says they last two years, and tells a reader in the UK or the EU plainly that they are set without asking first and how to block them. The finding was never "cookies are bad". It was a notice and a codebase disagreeing with nobody checking, and either side can be the one that moves.
+
 ## The controls now
 
 | Surface | Control |
@@ -62,6 +85,7 @@ The app now records its own coverage metric instead, snapped to the ~11 km grid 
 | Location listing | Coordinates rounded on output |
 | Access log | Query string and caller address never recorded on `/api/` |
 | Coverage metric | ~11 km grid cell only, with no identifier beside it |
+| Analytics | `analytics_storage` granted before the tag loads, so GA4 writes `_ga` and `_ga_<id>` for two years, and the privacy notice names both. Held by a test that fails if the notice and the analytics code disagree or a flag GA4 ignores reappears, and by a probe that loads the deployed site in a real browser and checks both the cookies it holds and the consent state each hit carries |
 | Webhook listing | Origins only, the full URL is never returned |
 | All reads | Open by design. The whole site is public weather data |
 | Personal station reads | Operator key held server side, never returned; station ids normalised and length capped before they reach an upstream URL |
@@ -81,6 +105,10 @@ The gate runs before routing, so an unauthenticated request to a path that does 
 The cheapest lesson of the same audit: three security headers were defined at the server level in nginx and were reaching **zero** responses, because `add_header` does not inherit into a location block that declares its own headers. The config looked right. One `curl -sSI` from outside the host proved it was not.
 
 Every control in the table above was verified from off the host after deployment. A control confirmed by reading the configuration that declares it has been confirmed to exist, not to work.
+
+The analytics cookie above is the sharpest case of that sentence in this project, because there was no configuration to misread. The option was present, spelled correctly, in the deployed page, and it did nothing at all. Reading the source proved the author's intent and nothing about the reader's browser. **Where a control lives in somebody else's runtime, the only honest check runs in that runtime**, which is why the probe for it drives a real browser rather than parsing the page. The second fix is the same sentence from the other side: denied consent did exactly what it was configured to do, and what it was configured to do was not what anyone believed, so the probe now also reads the `gcs` consent state on every hit and fails on any hit that leaves without storage granted.
+
+That probe carries one non obvious requirement worth stating, since it is how the check silently becomes useless. The analytics block suppresses itself for automation, on `navigator.webdriver`, so that Playwright runs and screenshot reshoots against the live site are not counted as visitors. A probe that does not mask that flag therefore reports no tracker and no cookie on a site that tracks every real reader: a clean result produced by the measurement disabling the thing it measures.
 
 The HSTS header added later made the same point twice. It went into all four nginx location blocks rather than the server level alone, for exactly the reason above, and its `max-age` is a deliberate five minutes: HSTS is a one way door for its own lifetime, a browser that has seen it refuses plain HTTP to the host until it expires, and no server side change shortens that. Five minutes means a mistake costs five minutes.
 
