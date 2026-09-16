@@ -4,9 +4,17 @@ What changed in DewFront, newest first. Each entry is dated by the weekend its w
 
 ---
 
+## 2026-09-16
+
+- Analytics no longer sets cookies. The site was setting two Google Analytics cookies for two years while the privacy notice said it set none; the counter now stores nothing on your device and cannot recognise a returning visitor.
+- The privacy notice now names Google, and says plainly that Cloudflare and Google both see your IP address. It also lists everything the app keeps in your browser, including your own Weather Underground key, and no longer implies API request logging covers ordinary page requests.
+- The build now fails if the privacy notice and the analytics code disagree, and `npm run privacy:probe` checks the deployed site against what the notice promises.
+
+---
+
 ## 2026-09-13
 
-- Privacy notice at [dewfront.com/privacy](https://dewfront.com/privacy), linked from the footer. No accounts, no cookies, no trackers, and it names every service your browser contacts directly.
+- Privacy notice at [dewfront.com/privacy](https://dewfront.com/privacy), linked from the footer. No accounts, and it names every service your browser contacts directly. Its claim of no cookies and no trackers was wrong, and was corrected on 2026-09-16.
 - The web server no longer logs the query string or the caller's address on API requests. It had been recording coordinates to fifteen decimal places next to the IP that sent them.
 - The app now logs which ~11 km grid cell a guest forecast was for, and nothing else, so coverage can be measured without recording anyone.
 - Desktop layout. The page used to stop widening at 1088px, so a 1920px screen showed the tablet layout with a third of the screen empty and the same amount of scrolling.

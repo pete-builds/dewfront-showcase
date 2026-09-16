@@ -141,11 +141,11 @@ Every derived value is a pure function with the clock passed in as an argument. 
 
 There is no component library, no CSS framework, no charting library and no map library. Styling is hand written CSS with custom properties, the temperature chart is hand rolled SVG, the condition marks are custom SVG glyphs rather than an icon pack, and both maps, the radar screen and the station picker, are raster tiles positioned by a hand rolled tile grid.
 
-Measured on 2026-09-14 by running the suite against the current tree, not by recalling a previous run:
+Measured on 2026-09-16 by running the suite against the current tree, not by recalling a previous run:
 
 | Metric | Value |
 |---|---|
-| Unit tests | 2,386 across 109 files |
+| Unit tests | 2,397 across 110 files |
 | End to end tests | 55 Playwright tests, upstreams mocked |
 | Statement coverage | 97.65 percent |
 | Branch coverage | 91.42 percent |
