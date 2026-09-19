@@ -145,11 +145,11 @@ Measured on 2026-09-19 by running the suite against the current tree, not by rec
 
 | Metric | Value |
 |---|---|
-| Unit tests | 2,452 across 112 files |
+| Unit tests | 2,463 across 114 files |
 | End to end tests | 55 Playwright tests, upstreams mocked |
 | Statement coverage | 97.54 percent |
-| Branch coverage | 91.41 percent |
-| Function coverage | 98.28 percent |
+| Branch coverage | 91.42 percent |
+| Function coverage | 98.29 percent |
 | Line coverage | 98.74 percent |
 | Source under test | roughly 33,000 lines of TypeScript across 208 non test files |
 

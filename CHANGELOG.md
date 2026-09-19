@@ -10,6 +10,8 @@ What changed in DewFront, newest first. Each entry is dated by the weekend its w
 - It tells you to shut them again in the morning, which is the half of the technique that makes the other half worth doing.
 - On the coldest stretch of a pre-cooling night it says to crack the windows rather than close them, so the house keeps flushing without the bedroom going arctic.
 - Nights with no forecast for tomorrow, and nights before a mild day, are unchanged.
+- Fixed the Windows card contradicting itself. "Keep windows closed" and "Open until 5 AM" could appear inches apart on the same card, because its two halves used different cold floors. They now share one, so a cool evening reads the same in both.
+- Fixed the indoor target setting, which snapped to 55 or 85 as you typed and made every value in between unreachable. You can type a number now.
 
 ---
 
