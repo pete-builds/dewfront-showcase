@@ -1,6 +1,6 @@
 # DewFront
 
-**DewFront is a weather app built for decisions rather than statistics, and it leads with dew point.** Instead of showing you a forecast and leaving the interpretation to you, it answers the questions you actually had: should the windows be open right now, can the AC go off tonight, and which two hour window today is the one worth going outside in.
+**DewFront is a weather app built for decisions rather than statistics, and it leads with dew point.** Instead of showing you a forecast and leaving the interpretation to you, it answers the questions you actually had: should the windows be open right now, can the AC go off tonight, is the house too dry to skip the humidifier, and which two hour window today is the one worth going outside in.
 
 **Live app:** [dewfront.com](https://dewfront.com)
 **Source:** the production repository is private. This repository is the case study: what it does, how it is built, and the engineering decisions behind it.
@@ -19,18 +19,29 @@ The second thing it does is refuse to hand you a table and call that an answer. 
 
 ## The decision engine
 
-**The overnight rule.** Overnight runs 8 PM to 8 AM. An hour is open when all four of these hold:
+**The overnight rule.** Overnight runs 8 PM to 8 AM. An hour is open when all five of these hold:
 
 | Condition | Threshold |
 |---|---|
 | Dew point | 60°F or below |
 | Outside temperature | below the indoor target, default 70°F, editable |
+| Outside temperature | at or above the cold floor, 50°F |
 | Precipitation probability | under 35 percent |
 | Wind | under 20 mph |
 
 The verdict is drawn from the longest contiguous run of open hours in that window, which is how "open all night", "open until 5 AM", "open after 11 PM" and "keep them shut" get decided. The card names the binding constraint, because "keep them shut" for a 68°F dew point and "keep them shut" for a 60 percent chance of rain are different nights.
 
-**Dew point comfort bands.** Under 50 is dry, 50 to 55 comfortable, 56 to 60 slightly humid, 61 to 65 humid, 66 to 70 muggy, 71 and up oppressive. Bands are upper inclusive, so exactly 55 is comfortable and 55.4 is slightly humid. The edge cases are pinned by tests because a classifier that disagrees with its own printed legend is worse than no legend.
+**Every threshold used to be an upper bound**, which encodes an assumption nobody stated: that the reason to open a window is to cool the house. True in July and false from October. Run against a January night the card returned "great night for open windows" and grew more confident the colder it got, because the worth-it margin widens as the gap does. The cold floor is the other end of that model, and it is derived from sleep comfort rather than picked: the coolest a bedroom should get, less the drift a house actually follows overnight.
+
+**The cold floor moves when tomorrow is hot.** A floor that stops the house overcooling is protecting the wrong thing on the night before an 88°F day, when banking cold in the walls is the entire point. Given a next-day high at least five degrees over the thermostat, the sleep minimum drops five degrees, and a 52°F night falling to 43°F goes from three open hours to nine. The card then says the half everyone forgets: shut them again in the morning, or the cool is spent back out by lunchtime. On the coldest stretch it says to crack them rather than close them.
+
+**Both halves of the card share that floor, and that is a fix rather than a nicety.** Windows-now and windows-tonight answer one question at two horizons and sit inches apart. They each carried their own floor, 55 and 50, so for every reading between them the card contradicted itself: "keep windows closed, at 54°F an open window would pull the house well below comfortable" directly above "open until 5 AM". The floor is now derived in one place and both halves take the same next-day high, so they cannot drift apart again. A test sweeps the range in half-degree steps and asserts they never disagree.
+
+**Below 45°F dew point the card stops asking the question.** Once it is cold and dry out, "should I open the windows" has one answer for five months, for a reason the reader can read off the thermometer. So it switches to the one that is live in that season and that the same dew point already predicts: whether the house is too dry. It reports what the outside air becomes once heated indoors, what to aim a humidifier at, and the humidity above which the windows start sweating, that last figure taken from published glass guidance rather than derived, because a derivation from centre-of-glass physics reads five to fifteen points high and condensation starts at the cold edge.
+
+**Dew point comfort bands.** Under 28 is bone dry, 28 to 37 extremely dry, 38 to 44 very dry, 45 to 49 dry, 50 to 55 comfortable, 56 to 60 slightly humid, 61 to 65 humid, 66 to 70 muggy, 71 and up oppressive. A reading in a printed gap resolves away from comfortable, so 55.4 is slightly humid and 44.5 is very dry. The edge cases are pinned by tests because a classifier that disagrees with its own printed legend is worse than no legend.
+
+The four dry bands replaced one. A 50°F dew point holds a heated room near 49 percent humidity and a 0°F dew point near 6 percent, and both used to print "dry" in the same colour, so the metric the app is named for stopped discriminating for half the year in the climate it was built in. The new boundaries are the dew points that land a 70°F room on the edges of published indoor guidance. The colour ramp gained a second direction with them, running into blue and indigo away from green rather than back through it, because discomfort rises at both ends of this scale and a single warm ramp can only express one.
 
 **Activity scoring.** Every hour of the next 48 is scored 0 to 100 against a chosen profile (mountain bike, gravel, dog walk, drone, camping) using that profile's comfort bands, weights and hard vetoes, and the app names the best two hour window today and tomorrow with a one line reason. For every profile except camping, no recommended window runs past civil dusk, computed from solar geometry for the latitude rather than a flat 30 minutes after sunset. The drone profile refuses outright above 20 mph sustained and flags gust spread separately, because the gust is what puts an aircraft into a tree.
 
