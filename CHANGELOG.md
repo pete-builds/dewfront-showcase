@@ -16,6 +16,8 @@ What changed in DewFront, newest first. Each entry is dated by the weekend its w
 - A night shut by rain or wind now says so, instead of "Keep the AC on tonight".
 - "Give the AC a break" now needs a hot day, today or tomorrow. A 55°F September night no longer gets it.
 - The closing note names what actually closes the window. A cold 5 AM is no longer blamed on humidity.
+- The Windows card now judges the week, not the hour. When nothing in the air will decide anything for 24 hours it collapses to one line ("Dry air all week", "AC season") and keeps only tonight's rain or cold; the humidifier card appears when the whole day is cold, and stops flickering in and out across a shoulder-season afternoon.
+- On a night that ends shut, the card prints the dew point where it closes rather than the night's low. "Holds near 48°F" under a strip climbing to 57°F is gone.
 
 ---
 
