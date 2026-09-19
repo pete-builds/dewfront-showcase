@@ -141,17 +141,17 @@ Every derived value is a pure function with the clock passed in as an argument. 
 
 There is no component library, no CSS framework, no charting library and no map library. Styling is hand written CSS with custom properties, the temperature chart is hand rolled SVG, the condition marks are custom SVG glyphs rather than an icon pack, and both maps, the radar screen and the station picker, are raster tiles positioned by a hand rolled tile grid.
 
-Measured on 2026-09-14 by running the suite against the current tree, not by recalling a previous run:
+Measured on 2026-09-19 by running the suite against the current tree, not by recalling a previous run:
 
 | Metric | Value |
 |---|---|
-| Unit tests | 2,386 across 109 files |
+| Unit tests | 2,452 across 112 files |
 | End to end tests | 55 Playwright tests, upstreams mocked |
-| Statement coverage | 97.65 percent |
-| Branch coverage | 91.42 percent |
-| Function coverage | 98.51 percent |
-| Line coverage | 98.82 percent |
-| Source under test | roughly 32,000 lines of TypeScript across 206 non test files |
+| Statement coverage | 97.54 percent |
+| Branch coverage | 91.41 percent |
+| Function coverage | 98.28 percent |
+| Line coverage | 98.74 percent |
+| Source under test | roughly 33,000 lines of TypeScript across 208 non test files |
 
 The tests worth pointing at are not the ones that assert a number renders. They are the ones that assert something is **absent**: relative humidity never appears on the windows decision card, the History archive is not fetched until that screen is opened (the test counts requests to prove it), and switching to Celsius leaves no Fahrenheit anywhere on the Now screen.
 
