@@ -152,6 +152,27 @@ Every derived value is a pure function with the clock passed in as an argument. 
 | Tests | Vitest with v8 coverage, Playwright against mocked upstreams |
 | CI | eslint at `--max-warnings 0`, prettier check, unit tests, client build, server build, Playwright, image scan, secret scan |
 
+### What each piece is
+
+For a reader who does not work in this stack, in the order they appear above.
+
+- **React** draws the interface and keeps what is on screen in step with the data behind it.
+- **TypeScript** is JavaScript with types, checked before the code runs rather than discovered when it breaks.
+- **Vite** compiles and bundles the frontend, and reloads it instantly while developing.
+- **TanStack Query** owns fetching and caching on the client. It is what decides data has gone stale and goes back for it, which is where the 15 minute window and the hourly forecast refetch live.
+- **Node** runs JavaScript outside a browser. It is why the server and the browser are the same language, which is what lets them share the decision logic rather than copy it.
+- **Fastify** is the web framework on the backend. It answers the API routes the frontend calls.
+- **better-sqlite3** is how the backend reads and writes the database. It is synchronous, so there is no connection pool to manage and no async bookkeeping around a file sitting on the same disk.
+- **node-cron** runs the scheduled work inside the server process, the upstream pulls and the archiving, on a clock rather than on a request.
+- **SQLite** is a full database that lives in one file on disk instead of a separate service to run, tune and back up.
+- **Docker** packages the app with everything it needs so it runs the same on any host. A multi stage build compiles in one stage and ships only the result, so the compilers never reach the deployed image.
+- **nginx** serves the built frontend files and passes API requests through to the backend.
+- **Cloudflare Tunnel** publishes the app without opening a port on the host. The host dials out, so there is no inbound door to find.
+- **Vitest** runs the unit tests, and v8 coverage measures which lines and branches those tests actually reached.
+- **Playwright** drives a real browser through the app the way a person would, with the weather APIs mocked so a test never depends on the weather.
+- **eslint** flags suspect patterns and **prettier** enforces one formatting style. Both fail the build rather than leave a note.
+- **CI** is the set of checks that run on every change before it can merge. The image scan looks for known vulnerabilities in the container, and the secret scan looks for credentials in the diff.
+
 There is no component library, no CSS framework, no charting library and no map library. Styling is hand written CSS with custom properties, the temperature chart is hand rolled SVG, the condition marks are custom SVG glyphs rather than an icon pack, and both maps, the radar screen and the station picker, are raster tiles positioned by a hand rolled tile grid.
 
 Measured on 2026-09-19 by running the suite against the current tree, not by recalling a previous run:
