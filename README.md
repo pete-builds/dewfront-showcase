@@ -175,11 +175,11 @@ For a reader who does not work in this stack, in the order they appear above.
 
 There is no component library, no CSS framework, no charting library and no map library. Styling is hand written CSS with custom properties, the temperature chart is hand rolled SVG, the condition marks are custom SVG glyphs rather than an icon pack, and both maps, the radar screen and the station picker, are raster tiles positioned by a hand rolled tile grid.
 
-Measured on 2026-09-19 by running the suite against the current tree, not by recalling a previous run:
+Measured on 2026-10-05 by running the suite against the current tree, not by recalling a previous run:
 
 | Metric | Value |
 |---|---|
-| Unit tests | 2,501 across 115 files |
+| Unit tests | 2,502 across 115 files |
 | End to end tests | 55 Playwright tests, upstreams mocked |
 | Statement coverage | 97.55 percent |
 | Branch coverage | 91.31 percent |
