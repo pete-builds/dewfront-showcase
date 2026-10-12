@@ -4,6 +4,12 @@ What changed in DewFront, newest first. Each entry is dated by the weekend its w
 
 ---
 
+## 2026-10-05
+
+- Google Analytics records visits again. Since 2026-09-16 it had been sending every page view marked "no consent", which Google keeps out of its reports, so the site's analytics sat empty. It now sets its two cookies, and the privacy notice names them.
+
+---
+
 ## 2026-09-19
 
 - The Tonight card now knows what tomorrow is doing. Before a hot day it opens hours it used to shut, because cooling the house overnight is the point rather than a side effect: a 52°F night falling to 43°F went from three open hours to nine when tomorrow reaches 90°F.
